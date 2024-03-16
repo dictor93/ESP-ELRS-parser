@@ -1,0 +1,23 @@
+{
+  "files.associations": {
+    "string_view": "cpp",
+    "array": "cpp",
+    "string": "cpp",
+    "ranges": "cpp",
+    "freertosconfig.h": "c",
+    "freertosconfig_arch.h": "c",
+    "xtensa_config.h": "c",
+    "reent.h": "c",
+    "bitset": "cpp",
+    "initializer_list": "cpp",
+    "regex": "cpp",
+    "utility": "cpp",
+    "*.tcc": "cpp",
+    "random": "cpp",
+    "functional": "cpp",
+    "tuple": "cpp",
+    "type_traits": "cpp",
+    "cstddef": "cpp"
+  },
+  "idf.adapterTargetName": "esp32"
+}
