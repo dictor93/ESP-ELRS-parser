@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/home/viktor/esp/esp-idf/components/**"
+                "/home/viktor/esp/esp-idf/components/**",
+                "/home/viktor/esp/esp-idf/components/esp_driver_uart/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
