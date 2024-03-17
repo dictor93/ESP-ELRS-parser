@@ -17,7 +17,11 @@
     "functional": "cpp",
     "tuple": "cpp",
     "type_traits": "cpp",
-    "cstddef": "cpp"
+    "cstddef": "cpp",
+    "chrono": "cpp",
+    "algorithm": "cpp",
+    "cmath": "cpp",
+    "complex": "cpp"
   },
   "idf.adapterTargetName": "esp32"
 }
