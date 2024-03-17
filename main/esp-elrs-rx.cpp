@@ -5,8 +5,10 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include <cstring>
+#include <cmath>
 #include "sdkconfig.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
@@ -14,7 +16,8 @@
 #include "esp_flash.h"
 #include "esp_system.h"
 #include "esp_log.h"
-#include "esp_err.h" // Add this line to include the missing header
+#include "esp_err.h"
+#include "driver/ledc.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -25,7 +28,7 @@
 
 static const char *TAG = "ESP_ELRS_CONTROLLER";
 
-#define BUF_SIZE (70)
+#define BUF_SIZE (100)
 #define RD_BUF_SIZE (BUF_SIZE)
 
 extern "C"
@@ -38,6 +41,9 @@ QueueHandle_t uart_queue;
 
 #define WIDTH (8 * sizeof(uint8_t))
 #define TOPBIT (1 << (WIDTH - 1))
+
+#define MAX_CHANNEL_VAL (813)
+#define DAC_8_BIT_RESOLUTION (255)
 
 typedef struct crsf_channels_t {
     unsigned ch0 : 11;
@@ -58,12 +64,150 @@ typedef struct crsf_channels_t {
     unsigned ch15 : 11;
 } PACKED;
 
-class Controller {
+class PWMMotors {
+    private:
+        uint16_t channelValToDac(uint16_t val) {
+            float CHANNEL_DAC_COEFF = (float)DAC_8_BIT_RESOLUTION / (float)MAX_CHANNEL_VAL;
+            return (uint16_t)(CHANNEL_DAC_COEFF * val);
+        }
+
     public:
-        Controller() { };
+        PWMMotors(int leftForwardPin, int leftBackwardPin, int rightForwardPin, int rightBackwardPin) {
+            uint32_t LEDC_FREQUENCY = 200000;
+
+            ledc_timer_config_t pwmTimer = {
+                .speed_mode       = LEDC_LOW_SPEED_MODE,
+                .duty_resolution  = LEDC_TIMER_8_BIT,
+                .timer_num        = LEDC_TIMER_0,
+                .freq_hz          = LEDC_FREQUENCY,
+                .clk_cfg          = LEDC_AUTO_CLK
+            };
+            ESP_ERROR_CHECK(ledc_timer_config(&pwmTimer));
+
+
+            ledc_channel_config_t leftForwardPimConfig = {
+                .gpio_num       = leftForwardPin,
+                .speed_mode     = LEDC_LOW_SPEED_MODE,
+                .channel        = LEDC_CHANNEL_0,
+                .intr_type      = LEDC_INTR_DISABLE,
+                .timer_sel      = LEDC_TIMER_0,
+                .duty           = DAC_8_BIT_RESOLUTION,
+                .hpoint         = 0
+            };
+            ledc_channel_config_t leftBackwardPimConfig = {
+                .gpio_num       = leftBackwardPin,
+                .speed_mode     = LEDC_LOW_SPEED_MODE,
+                .channel        = LEDC_CHANNEL_1,
+                .intr_type      = LEDC_INTR_DISABLE,
+                .timer_sel      = LEDC_TIMER_0,
+                .duty           = DAC_8_BIT_RESOLUTION,
+                .hpoint         = 0
+            };
+            ledc_channel_config_t rightForwardPimConfig = {
+                .gpio_num       = rightForwardPin,
+                .speed_mode     = LEDC_LOW_SPEED_MODE,
+                .channel        = LEDC_CHANNEL_2,
+                .intr_type      = LEDC_INTR_DISABLE,
+                .timer_sel      = LEDC_TIMER_0,
+                .duty           = DAC_8_BIT_RESOLUTION,
+                .hpoint         = 0
+            };
+            ledc_channel_config_t rightBackwardPimConfig = {
+                .gpio_num       = rightBackwardPin,
+                .speed_mode     = LEDC_LOW_SPEED_MODE,
+                .channel        = LEDC_CHANNEL_3,
+                .intr_type      = LEDC_INTR_DISABLE,
+                .timer_sel      = LEDC_TIMER_0,
+                .duty           = DAC_8_BIT_RESOLUTION,
+                .hpoint         = 0
+            };
+
+
+            ESP_ERROR_CHECK(ledc_channel_config(&leftForwardPimConfig));
+            ESP_ERROR_CHECK(ledc_channel_config(&leftBackwardPimConfig));
+            ESP_ERROR_CHECK(ledc_channel_config(&rightForwardPimConfig));
+            ESP_ERROR_CHECK(ledc_channel_config(&rightBackwardPimConfig));
+        }
+
+        void setSpeed(uint16_t ml_speed, uint8_t mlDir, uint16_t mr_speed, uint8_t mrDir) {
+            printf("ml_speed: %d, mlDir: %d, mr_speed: %d, mrDir: %d\n", ml_speed, mlDir, mr_speed, mrDir);
+            uint16_t dutyML = DAC_8_BIT_RESOLUTION - this->channelValToDac(ml_speed);
+            if(mlDir) {
+                ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, dutyML));
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
+                ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, DAC_8_BIT_RESOLUTION));
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1));
+            } else {
+                ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, dutyML));
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1));
+                ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, DAC_8_BIT_RESOLUTION));
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
+            }
+
+            uint16_t dutyMR = DAC_8_BIT_RESOLUTION - this->channelValToDac(mr_speed);
+            if(mrDir) {
+                ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, dutyMR));
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2));
+                ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_3, DAC_8_BIT_RESOLUTION));
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_3));
+            } else {
+                ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_3, dutyMR));
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_3));
+                ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, DAC_8_BIT_RESOLUTION));
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2));
+            }
+        }
+};
+
+class Controller {
+    struct motorsState_t {
+        uint16_t ml_speed;
+        uint16_t mr_speed;
+        uint8_t mlDir;
+        uint8_t mrDir;
+    };
+    private:
+        PWMMotors *motors;
+        motorsState_t motorsState;
+        void convertElrsToMotorsDirection(crsf_channels_t *channels) {
+            int maxChannelVal = MAX_CHANNEL_VAL;
+            uint16_t stickZeroPosition = 992;
+            uint16_t rotationStick = channels->ch0;
+            uint16_t throttleStick = channels->ch1;
+            int throttleVal = throttleStick - stickZeroPosition;
+            int rotationVal = (int)((rotationStick - stickZeroPosition));
+
+
+            int lSpeedAbsolute;
+            int rSpeedAbsolute;
+            if(throttleVal < -50) {
+                lSpeedAbsolute = (throttleVal - rotationVal);
+                rSpeedAbsolute = (throttleVal + rotationVal);
+            } else {
+                lSpeedAbsolute = (throttleVal + rotationVal);
+                rSpeedAbsolute = (throttleVal - rotationVal);
+            }
+
+            printf("lSpeedAbsolute: %d, rSpeedAbsolute: %d\n", lSpeedAbsolute, rSpeedAbsolute);
+            motorsState.ml_speed = (uint16_t)(sqrt(abs(lSpeedAbsolute))*sqrt(maxChannelVal));
+            motorsState.mr_speed = (uint16_t)(sqrt(abs(rSpeedAbsolute))*sqrt(maxChannelVal));
+
+            if(motorsState.ml_speed > maxChannelVal) {
+                motorsState.ml_speed = MAX_CHANNEL_VAL;
+            }
+            if(motorsState.mr_speed > maxChannelVal) {
+                motorsState.mr_speed = MAX_CHANNEL_VAL;
+            }
+            motorsState.mlDir = (lSpeedAbsolute > 0) ? 1 : 0;
+            motorsState.mrDir = (rSpeedAbsolute > 0) ? 1 : 0;
+            this->motors->setSpeed(motorsState.ml_speed, motorsState.mlDir, motorsState.mr_speed, motorsState.mrDir);
+        }
+    public:
+        Controller(PWMMotors *motors) {
+            this->motors = motors;
+        };
         void packageReceived(crsf_channels_t *channels) {
-            printf("Received package\n");
-            printf("Ch0: %d Ch1: %d Ch2: %d Ch3: %d Ch4: %d Ch5: %d Ch6: %d Ch7: %d Ch8: %d Ch9: %d Ch10: %d Ch11: %d Ch12: %d", channels->ch0, channels->ch1, channels->ch2, channels->ch3, channels->ch4, channels->ch5, channels->ch6, channels->ch7, channels->ch8, channels->ch9, channels->ch10, channels->ch11, channels->ch12);
+            this->convertElrsToMotorsDirection(channels);
         };
 };
 #define PackageMaxSize 64
@@ -113,18 +257,18 @@ class UartELRS {
             this->portNum = portNum;
 
             uart_config_t uart_config = {
-                .baud_rate = 400000,
+                .baud_rate = 420000,
                 .data_bits = UART_DATA_8_BITS,
                 .parity = UART_PARITY_DISABLE,
                 .stop_bits = UART_STOP_BITS_1,
                 .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
                 .rx_flow_ctrl_thresh = BUF_SIZE,
             };
-            const int uart_buffer_size = (BUF_SIZE);
-            ESP_ERROR_CHECK(uart_driver_install(portNum, 1024, 1024, 10, &uart_queue, 0));
+            const int uart_buffer_size = 1024;
+            ESP_ERROR_CHECK(uart_driver_install(portNum, uart_buffer_size, 1024, 10, &uart_queue, 0));
             ESP_ERROR_CHECK(uart_param_config(portNum, &uart_config));
             ESP_ERROR_CHECK(uart_set_pin(portNum, 4, 5, 18, 19));
-            ESP_ERROR_CHECK(uart_enable_rx_intr(this->portNum));
+            ESP_ERROR_CHECK(uart_enable_rx_intr(portNum));
 
             crcInit();
         };
@@ -140,26 +284,25 @@ class UartELRS {
             if (currentByte == 0xc8 || currentByte == 0xee || currentByte == 0xea || currentByte == 0xec) {
                 uint8_t size;
                 uart_read_bytes(this->portNum, &size, 1, portMAX_DELAY);
-                if(size > maxSize - 1) {
-                    size = (uint8_t)maxSize -1;
+                if(size > maxSize) {
+                    size = (uint8_t)maxSize;
                 }
 
                 uart_read_bytes(this->portNum, data, size, portMAX_DELAY);
-                uint8_t crc = crcFast(data, size-1);
-
-                // if(crc == data[size-1]) {
-                    // if (data[0] == 0x16) {
-                        for (int ix = 1; ix < size; ix++)
-                        BF_channels[ix-1] = data[ix];
-                        
+                uint8_t crc = crcFast(data, size - 1);
+                
+                if(crc == data[size-1]) {
+                    if (data[0] == 0x16) {
+                        for (int ix = 1; ix < size; ix++) {
+                            BF_channels[ix-1] = data[ix];
+                        }
                         controller->packageReceived(cr_channels);
-                //     }
-                // }
+                    }
+                }
             }
             this->reading = false;
         };
 };
-
 
 static void uart_event_task(void *args) {
     UartELRS *uartElrs = (UartELRS *) args;
@@ -171,10 +314,8 @@ static void uart_event_task(void *args) {
             bzero(dtmp, RD_BUF_SIZE);
             switch (event.type) {
             case UART_DATA:
-                {
-                    uartElrs->read(event.size);
-                    break;
-                }
+                uartElrs->read(event.size);
+                break;
             case UART_FIFO_OVF:
                 uart_flush_input(uartElrs->portNum);
                 xQueueReset(uart_queue);
@@ -216,8 +357,8 @@ static void uart_event_task(void *args) {
 void app_main(void) {
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
-        
-    Controller *controller = new Controller();
+    PWMMotors *pwmMotors = new PWMMotors(21, 15, 16, 17);
+    Controller *controller = new Controller(pwmMotors);
     UartELRS *uart = new UartELRS(UART_NUM_2, controller);
 
 
