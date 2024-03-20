@@ -1,6 +1,6 @@
-#include "./src/UartELRSParser/UartELRSParser.hpp"
-#include "./src/PWMMotorsControl/PWMMotorsControl.hpp"
-#include "./src/Controller/Controller.hpp"
+#include "UartELRSParser.hpp"
+#include "PWMMotorsControl.hpp"
+#include "Controller.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
