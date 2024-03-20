@@ -66,9 +66,11 @@ typedef struct crsf_channels_t {
 
 class PWMMotors {
     private:
+        double roundSmooth(double val) {
+            return sqrt((2 * val) - (val * val));
+        }
         uint16_t channelValToDac(uint16_t val) {
-            float CHANNEL_DAC_COEFF = (float)DAC_8_BIT_RESOLUTION / (float)MAX_CHANNEL_VAL;
-            return (uint16_t)(CHANNEL_DAC_COEFF * val);
+            return (uint16_t)(DAC_8_BIT_RESOLUTION * roundSmooth((double)val/MAX_CHANNEL_VAL));
         }
 
     public:
@@ -130,7 +132,6 @@ class PWMMotors {
         }
 
         void setSpeed(uint16_t ml_speed, uint8_t mlDir, uint16_t mr_speed, uint8_t mrDir) {
-            printf("ml_speed: %d, mlDir: %d, mr_speed: %d, mrDir: %d\n", ml_speed, mlDir, mr_speed, mrDir);
             uint16_t dutyML = DAC_8_BIT_RESOLUTION - this->channelValToDac(ml_speed);
             if(mlDir) {
                 ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, dutyML));
@@ -175,8 +176,7 @@ class Controller {
             uint16_t rotationStick = channels->ch0;
             uint16_t throttleStick = channels->ch1;
             int throttleVal = throttleStick - stickZeroPosition;
-            int rotationVal = (int)((rotationStick - stickZeroPosition));
-
+            int rotationVal = rotationStick - stickZeroPosition;
 
             int lSpeedAbsolute;
             int rSpeedAbsolute;
@@ -188,7 +188,6 @@ class Controller {
                 rSpeedAbsolute = (throttleVal - rotationVal);
             }
 
-            printf("lSpeedAbsolute: %d, rSpeedAbsolute: %d\n", lSpeedAbsolute, rSpeedAbsolute);
             motorsState.ml_speed = (uint16_t)(sqrt(abs(lSpeedAbsolute))*sqrt(maxChannelVal));
             motorsState.mr_speed = (uint16_t)(sqrt(abs(rSpeedAbsolute))*sqrt(maxChannelVal));
 
