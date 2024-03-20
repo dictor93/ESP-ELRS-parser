@@ -23,41 +23,7 @@ static void uart_event_task(void *args) {
     for (;;) {
         if (xQueueReceive(uart_queue, (void *)&event, (TickType_t)portMAX_DELAY)) {
             bzero(dtmp, RD_BUF_SIZE);
-            switch (event.type) {
-            case UART_DATA:
-                uartElrs->read(event.size);
-                break;
-            case UART_FIFO_OVF:
-                uart_flush_input(uartElrs->portNum);
-                xQueueReset(uart_queue);
-                break;
-            case UART_BUFFER_FULL:
-                uart_flush_input(uartElrs->portNum);
-                xQueueReset(uart_queue);
-                break;
-            case UART_BREAK:
-                break;
-            case UART_PARITY_ERR:
-                break;
-            case UART_FRAME_ERR:
-                break;
-            case UART_PATTERN_DET: {
-                uart_get_buffered_data_len(uartElrs->portNum, &buffered_size);
-                int pos = uart_pattern_pop_pos(uartElrs->portNum);
-                if (pos == -1) {
-                    uart_flush_input(uartElrs->portNum);
-                } else {
-                    uart_read_bytes(uartElrs->portNum, dtmp, pos, 100 / portTICK_PERIOD_MS);
-                    uint8_t pat[PATTERN_CHR_NUM + 1];
-                    memset(pat, 0, sizeof(pat));
-                    uart_read_bytes(uartElrs->portNum, pat, PATTERN_CHR_NUM, 100 / portTICK_PERIOD_MS);
-                }
-                break;
-            }
-            default:
-                // ESP_LOGI(TAG, "uart event type: %d", event.type);
-                break;
-            }
+            uartElrs->onUartIntQueueItem(&event, &uart_queue);
         }
     }
     free(dtmp);

@@ -25,6 +25,7 @@ private:
 public:
   uart_port_t portNum;
   UartELRSParser(uart_port_t portNum, Controller *controller, QueueHandle_t *uart_queue);
+  void onUartIntQueueItem(uart_event_t *event, QueueHandle_t *uart_queue);
   void read(uint16_t maxSize);
 };
 

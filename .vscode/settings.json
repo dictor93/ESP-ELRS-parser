@@ -17,6 +17,7 @@
     "gpio.h": "c",
     "stdio.h": "c",
     "freertos.h": "c",
-    "uart.h": "c"
+    "uart.h": "c",
+    "cstdint": "cpp"
   }
 }
