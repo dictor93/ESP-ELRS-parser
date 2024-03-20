@@ -82,7 +82,8 @@ class PWMMotors {
                 .duty_resolution  = LEDC_TIMER_8_BIT,
                 .timer_num        = LEDC_TIMER_0,
                 .freq_hz          = LEDC_FREQUENCY,
-                .clk_cfg          = LEDC_AUTO_CLK
+                .clk_cfg          = LEDC_AUTO_CLK,
+                .deconfigure     = false
             };
             ESP_ERROR_CHECK(ledc_timer_config(&pwmTimer));
 
@@ -94,7 +95,8 @@ class PWMMotors {
                 .intr_type      = LEDC_INTR_DISABLE,
                 .timer_sel      = LEDC_TIMER_0,
                 .duty           = DAC_8_BIT_RESOLUTION,
-                .hpoint         = 0
+                .hpoint         = 0,
+                .flags          = { .output_invert = 0 }
             };
             ledc_channel_config_t leftBackwardPimConfig = {
                 .gpio_num       = leftBackwardPin,
@@ -103,7 +105,8 @@ class PWMMotors {
                 .intr_type      = LEDC_INTR_DISABLE,
                 .timer_sel      = LEDC_TIMER_0,
                 .duty           = DAC_8_BIT_RESOLUTION,
-                .hpoint         = 0
+                .hpoint         = 0,
+                .flags          = { .output_invert = 0 }
             };
             ledc_channel_config_t rightForwardPimConfig = {
                 .gpio_num       = rightForwardPin,
@@ -112,7 +115,8 @@ class PWMMotors {
                 .intr_type      = LEDC_INTR_DISABLE,
                 .timer_sel      = LEDC_TIMER_0,
                 .duty           = DAC_8_BIT_RESOLUTION,
-                .hpoint         = 0
+                .hpoint         = 0,
+                .flags          = { .output_invert = 0 }
             };
             ledc_channel_config_t rightBackwardPimConfig = {
                 .gpio_num       = rightBackwardPin,
@@ -121,7 +125,8 @@ class PWMMotors {
                 .intr_type      = LEDC_INTR_DISABLE,
                 .timer_sel      = LEDC_TIMER_0,
                 .duty           = DAC_8_BIT_RESOLUTION,
-                .hpoint         = 0
+                .hpoint         = 0,
+                .flags          = { .output_invert = 0 }
             };
 
 
@@ -262,6 +267,7 @@ class UartELRS {
                 .stop_bits = UART_STOP_BITS_1,
                 .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
                 .rx_flow_ctrl_thresh = BUF_SIZE,
+                .source_clk = UART_SCLK_DEFAULT
             };
             const int uart_buffer_size = 1024;
             ESP_ERROR_CHECK(uart_driver_install(portNum, uart_buffer_size, 1024, 10, &uart_queue, 0));
