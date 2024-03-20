@@ -1,4 +1,4 @@
-#include "../Controller/Controller.hpp"
+#include "Controller.hpp"
 #include "driver/uart.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"

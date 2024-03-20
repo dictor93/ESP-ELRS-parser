@@ -1,6 +1,6 @@
 #include <cmath>
 #include "driver/gpio.h"
-#include "../PWMMotorsControl/PWMMotorsControl.hpp"
+#include "PWMMotorsControl.hpp"
 
 #ifndef ControllerCl
 #define ControllerCl
