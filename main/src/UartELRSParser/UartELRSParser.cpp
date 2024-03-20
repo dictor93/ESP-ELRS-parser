@@ -48,7 +48,7 @@ public:
             .rx_flow_ctrl_thresh = BUF_SIZE,
         };
         const int uart_buffer_size = 1024;
-        ESP_ERROR_CHECK(uart_driver_install(portNum, uart_buffer_size, 1024, 10, &uart_queue, 0));
+        ESP_ERROR_CHECK(uart_driver_install(portNum, uart_buffer_size, 1024, 10, uart_queue, 0));
         ESP_ERROR_CHECK(uart_param_config(portNum, &uart_config));
         ESP_ERROR_CHECK(uart_set_pin(portNum, 4, 5, 18, 19));
         ESP_ERROR_CHECK(uart_enable_rx_intr(portNum));

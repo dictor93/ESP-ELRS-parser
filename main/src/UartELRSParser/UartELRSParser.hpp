@@ -1,6 +1,5 @@
 #include "../Controller/Controller.hpp"
 #include "driver/uart.h"
-#include "../../esp-elrs-rx.hpp"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include <cstdint>
@@ -10,6 +9,9 @@
 
 #ifndef UartELRSParserCl
 #define UartELRSParserCl
+
+#define BUF_SIZE (100)
+#define RD_BUF_SIZE (BUF_SIZE)
 
 class UartELRSParser {
 private:

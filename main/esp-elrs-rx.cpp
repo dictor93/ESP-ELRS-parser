@@ -1,4 +1,7 @@
 #include "esp-elrs-rx.hpp"
+#include "./src/UartELRSParser/UartELRSParser.hpp"
+#include "./src/PWMMotorsControl/PWMMotorsControl.hpp"
+#include "./src/Controller/Controller.hpp"
 
 
 #define PATTERN_CHR_NUM    (3)  
