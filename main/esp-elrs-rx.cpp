@@ -18,16 +18,11 @@ QueueHandle_t uart_queue;
 static void uart_event_task(void *args) {
     UartELRSParser *uartElrs = (UartELRSParser *) args;
     uart_event_t event;
-    size_t buffered_size;
-    uint8_t* dtmp = (uint8_t*) malloc(RD_BUF_SIZE);
     for (;;) {
         if (xQueueReceive(uart_queue, (void *)&event, (TickType_t)portMAX_DELAY)) {
-            bzero(dtmp, RD_BUF_SIZE);
             uartElrs->onUartIntQueueItem(&event, &uart_queue);
         }
     }
-    free(dtmp);
-    dtmp = NULL;
     vTaskDelete(NULL);
 }
 
