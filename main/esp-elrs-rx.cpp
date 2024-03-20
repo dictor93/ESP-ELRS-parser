@@ -1,8 +1,22 @@
-#include "esp-elrs-rx.hpp"
 #include "./src/UartELRSParser/UartELRSParser.hpp"
 #include "./src/PWMMotorsControl/PWMMotorsControl.hpp"
 #include "./src/Controller/Controller.hpp"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <inttypes.h>
+#include <cstring>
+#include "sdkconfig.h"
+#include "esp_chip_info.h"
+#include "esp_flash.h"
+#include "esp_system.h"
+#include "esp_log.h"
+#include "esp_err.h"
+#include "driver/uart.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
 
 #define PATTERN_CHR_NUM    (3)  
 

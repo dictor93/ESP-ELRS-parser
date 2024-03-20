@@ -1,6 +1,5 @@
 #include "Controller.hpp"
 
-#include "../../esp-elrs-rx.hpp"
 
 void Controller::convertElrsToMotorsDirection(crsf_channels_t *channels) {
     int maxChannelVal = MAX_CHANNEL_VAL;
