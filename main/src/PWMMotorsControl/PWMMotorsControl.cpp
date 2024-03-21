@@ -8,7 +8,8 @@ PWMMotorsControl::PWMMotorsControl(int leftForwardPin, int leftBackwardPin,
                                     .duty_resolution = LEDC_TIMER_8_BIT,
                                     .timer_num = LEDC_TIMER_0,
                                     .freq_hz = LEDC_FREQUENCY,
-                                    .clk_cfg = LEDC_AUTO_CLK};
+                                    .clk_cfg = LEDC_AUTO_CLK,
+                                    .deconfigure = false};
     ESP_ERROR_CHECK(ledc_timer_config(&pwmTimer));
 
     ledc_channel_config_t leftForwardPimConfig = {
@@ -18,7 +19,8 @@ PWMMotorsControl::PWMMotorsControl(int leftForwardPin, int leftBackwardPin,
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
         .duty = DAC_8_BIT_RESOLUTION,
-        .hpoint = 0};
+        .hpoint = 0,
+        .flags = {.output_invert = 0}};
     ledc_channel_config_t leftBackwardPimConfig = {
         .gpio_num = leftBackwardPin,
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -26,7 +28,8 @@ PWMMotorsControl::PWMMotorsControl(int leftForwardPin, int leftBackwardPin,
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
         .duty = DAC_8_BIT_RESOLUTION,
-        .hpoint = 0};
+        .hpoint = 0,
+        .flags = {.output_invert = 0}};
     ledc_channel_config_t rightForwardPimConfig = {
         .gpio_num = rightForwardPin,
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -34,7 +37,8 @@ PWMMotorsControl::PWMMotorsControl(int leftForwardPin, int leftBackwardPin,
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
         .duty = DAC_8_BIT_RESOLUTION,
-        .hpoint = 0};
+        .hpoint = 0,
+        .flags = {.output_invert = 0}};
     ledc_channel_config_t rightBackwardPimConfig = {
         .gpio_num = rightBackwardPin,
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -42,7 +46,8 @@ PWMMotorsControl::PWMMotorsControl(int leftForwardPin, int leftBackwardPin,
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
         .duty = DAC_8_BIT_RESOLUTION,
-        .hpoint = 0};
+        .hpoint = 0,
+        .flags = {.output_invert = 0}};
 
     ESP_ERROR_CHECK(ledc_channel_config(&leftForwardPimConfig));
     ESP_ERROR_CHECK(ledc_channel_config(&leftBackwardPimConfig));
@@ -55,10 +60,8 @@ double PWMMotorsControl::roundSmooth(double val) {
 }
 
 uint16_t PWMMotorsControl::channelValToDac(uint16_t val) {
-    return (uint16_t)(
-        DAC_8_BIT_RESOLUTION *
-        roundSmooth((double)val / MAX_CHANNEL_VAL)
-    );
+    return (uint16_t)(DAC_8_BIT_RESOLUTION *
+                      roundSmooth((double)val / MAX_CHANNEL_VAL));
 }
 
 void PWMMotorsControl::setSpeed(uint16_t ml_speed, uint8_t mlDir,
