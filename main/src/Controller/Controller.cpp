@@ -7,7 +7,7 @@ void Controller::convertElrsToMotorsDirection(crsf_channels_t *channels) {
     uint16_t rotationStick = channels->ch0;
     uint16_t throttleStick = channels->ch1;
     int throttleVal = throttleStick - stickZeroPosition;
-    int rotationVal = (int)((rotationStick - stickZeroPosition));
+    int rotationVal = rotationStick - stickZeroPosition;
 
     int lSpeedAbsolute;
     int rSpeedAbsolute;

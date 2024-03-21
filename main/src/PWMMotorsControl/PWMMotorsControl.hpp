@@ -16,6 +16,7 @@
 
 class PWMMotorsControl {
 private:
+  double roundSmooth(double val);
   uint16_t channelValToDac(uint16_t val);
 
 public:

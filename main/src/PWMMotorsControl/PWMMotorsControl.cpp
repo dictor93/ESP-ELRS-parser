@@ -50,10 +50,15 @@ PWMMotorsControl::PWMMotorsControl(int leftForwardPin, int leftBackwardPin,
     ESP_ERROR_CHECK(ledc_channel_config(&rightBackwardPimConfig));
 }
 
+double PWMMotorsControl::roundSmooth(double val) {
+    return sqrt((2 * val) - (val * val));
+}
+
 uint16_t PWMMotorsControl::channelValToDac(uint16_t val) {
-    float CHANNEL_DAC_COEFF =
-        (float)DAC_8_BIT_RESOLUTION / (float)MAX_CHANNEL_VAL;
-    return (uint16_t)(CHANNEL_DAC_COEFF * val);
+    return (uint16_t)(
+        DAC_8_BIT_RESOLUTION *
+        roundSmooth((double)val / MAX_CHANNEL_VAL)
+    );
 }
 
 void PWMMotorsControl::setSpeed(uint16_t ml_speed, uint8_t mlDir,
